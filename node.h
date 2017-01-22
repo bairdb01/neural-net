@@ -26,26 +26,23 @@
 #endif
 
 typedef struct Node {
-    struct DataIn *data_in;    // Holds all data the node is receiving
-    Weights *weights;   // List of weights to next layer
-    struct Node *next;         // Pointer to next node in same layer
+    struct DataIn *data_in;     // Holds all data the node is receiving
+    Weights *weights;           // List of weights to next layer
+    struct Node *next;          // Pointer to next node in same layer
 }Node;
 
 typedef struct NodeLayer {
-    Node *nodes;             // Linked list of nodes in this layer
-    struct NodeLayer *next;  // Pointer to the next layer
+    Node *nodes;                // Linked list of nodes in this layer
+    struct NodeLayer *next;     // Pointer to the next layer
 }NodeLayer;
 
 typedef struct DataIn{
-    double w_val;   // Weighted value
+    double w_val;   // Weighted value (weight * value)
     struct DataIn *next;
 }DataIn;
 
 // Inits a DataIn structure
-DataIn *initDataIn();
-
-// Appends a double to the receiver list
-void addDataIn(double toSend, DataIn *receiver);
+DataIn * initDataIn();
 
 // Initialize node
 Node * initNode();
@@ -66,4 +63,34 @@ void freeNode(Node* node);
 void freeNodeLayer(NodeLayer *list);
 
 // Creates a layer of hidden nodes
-NodeLayer *initHiddenLayer(int numNodes);
+NodeLayer * initHiddenLayer(int numNodes);
+
+// Iterate through all the input data of a node and calculate the weighted sum
+double calcValue(Node *node);
+
+// Sigmoid function
+double sigmoid(double x);
+
+// SigmoidError function
+double sigmoidError(double x);
+
+// Sends a double (weight*value) to the start of receiver's data list
+void sendData(double toSend, Node *receiver);
+
+// Calculates the weighted sum of the inputs of a node
+double calcValue(Node *node);
+
+// A node computes it's output values and sends to the next layer
+void computeNode(Node *curNode, NodeLayer *nextLayer);
+
+// Iterates through all nodes in a layer and sends the results to the next layer
+void feedLayer(NodeLayer *layer);
+
+// Begin feeding the network with data to receive an output
+void feedNetwork();
+
+// Outputs the results of the nodes in the last layer
+void getOutput(NodeLayer *network);
+
+// Prints the DataIn structure
+void printDataIn(DataIn *data);
