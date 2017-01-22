@@ -4,8 +4,11 @@
  * Date: Jan 18, 2017
  * Description: Implementation of the functions described in node.h
  *              (Functions to aid in node tasks)
- * TODO: Test free functions
- * TODO: Test this -> When done with node->data_in, reset it
+ * Used the following website as an example for calculations:
+ *         http://www.doc.ic.ac.uk/~sgc/teaching/pre2012/v231/lecture13.html
+ * TODO: free functions
+ * TODO: In data_in the there is an extra 0 at the end of list, doesn't affect results only memory
+ * TODO: what does sigmoid (threshold  + sum do), is same as sigmoid(sum)?
  */
 
 #ifndef NODE_H
@@ -21,6 +24,9 @@
 // Initialize node
 Node * initNode(){
     Node *node = malloc(sizeof(Node));
+    node->value = 0.0;
+    node->threshold = rand()/(double)RAND_MAX;
+    node->err = 0.0;
     node->weights = initWeights();
     node->data_in = initDataIn();
     node->next = NULL;
@@ -32,7 +38,7 @@ NodeLayer * initLayer (int numNodes) {
     NodeLayer *nodeLayer = malloc(sizeof(NodeLayer));
     nodeLayer->nodes = NULL;
     nodeLayer->next = NULL;
-
+    nodeLayer->prev = NULL;
     // Create numNodes amount of nodes
     for (int i = 0; i < numNodes; i++) {
         Node *newNode = initNode();
@@ -45,6 +51,9 @@ NodeLayer * initLayer (int numNodes) {
 
 // Print a node
 void printNode(Node *node) {
+    printf("Value: %lf\n", node->value);
+    printf("Threshold: %lf\n", node->threshold);
+    printf("Error: %lf \n",node->err);
     printDataIn(node->data_in);
     printWeights(node->weights);
     printf("\n");
@@ -63,13 +72,23 @@ void printDataIn(DataIn *data) {
 // Print NodeLayer
 void printLayer(NodeLayer *list) {
     Node * curNode = list->nodes;
-    printf("\n\t\tLayer\n");
     while (curNode != NULL) {
         printNode(curNode);
         curNode = curNode->next;
     }
 }
 
+void printNetwork(NodeLayer *network) {
+    NodeLayer *temp = network;
+    int i = 0;
+    while (temp != NULL) {
+        printf("\t\t--- Layer %d ----\n", i);
+        printLayer(temp);
+        i++;
+        temp = temp->next;
+    }
+
+}
 // Free Node
 void freeNode(Node *node){
     // In nodes
@@ -112,13 +131,6 @@ void sendData(double toSend, Node *receiver){
     toAdd->w_val = toSend;
     toAdd->next = receiver->data_in;
     receiver->data_in = toAdd;
-
-    // DataIn *temp = receiver;
-    // while(temp->next != NULL) {
-        // temp = temp->next;
-    // }
-
-    // temp->next = toAdd;
 }
 
 double calcValue(Node *node){
@@ -136,13 +148,13 @@ double calcValue(Node *node){
     return ans;
 }
 
-// A node computes it's output values and sends to the next layer
 void computeNode(Node *curNode, NodeLayer *nextLayer){
     // Calculate the value to send (weighted sum input passed through the sigmoid function)
     double value = calcValue(curNode);
     // printf("%lf\n", value);
     Weights *curWeight = curNode->weights;
     value = sigmoid(value);
+    curNode->value = value;
     Node *nextNode = nextLayer->nodes;
 
     // Send the node's calculated value to each node in the next layer (value * nodeWeight)
@@ -164,7 +176,6 @@ void feedLayer(NodeLayer *layer) {
     }
 }
 
-// Begin feeding the network with data to receive an output
 void feedNetwork(NodeLayer *network){
     // First layer does not need to perform a sigmoid on input, just send weight*input
     Node *in_Nodes = network->nodes;
@@ -172,6 +183,7 @@ void feedNetwork(NodeLayer *network){
         Weights *curWeight = in_Nodes->weights;
         Node *receiver = network->next->nodes;
         double value = in_Nodes->data_in->w_val;
+        in_Nodes->value = value;
 
         // Send the input value to each node in the next layer (value * nodeWeight)
         while (receiver != NULL && curWeight != NULL) {
@@ -185,7 +197,6 @@ void feedNetwork(NodeLayer *network){
     // Iterate through all hidden layers and compute results
     NodeLayer *curLayer = network->next;
     while (curLayer->next != NULL) {
-        printLayer(curLayer);
         feedLayer(curLayer);
         curLayer = curLayer->next;
     }
@@ -194,7 +205,6 @@ void feedNetwork(NodeLayer *network){
     getOutput(curLayer);
 }
 
-// Outputs the results of the nodes in the last layer
 void getOutput(NodeLayer *network){
     NodeLayer *curLayer = network;
     while(curLayer->next != NULL){
@@ -208,10 +218,97 @@ void getOutput(NodeLayer *network){
     while (curNode != NULL) {
         double value = calcValue(curNode);
         value = sigmoid(value);
+        curNode->value = value;
         printf("Output Value:%lf\n", value);
         curNode = curNode->next;
     }
 }
+
+double backPropagateError(NodeLayer *in_layer, double *targetValues){
+    double err = 0.0; // Error for pattern
+    double learningRate = 0.3;
+    double momentum = 0.6;
+
+    // Find the output/last layer
+    NodeLayer *ahead_layer = in_layer;
+    while(ahead_layer->next != NULL){
+        ahead_layer = ahead_layer->next;
+    }
+
+    Node *curNode = ahead_layer->nodes;
+    int targetCounter = 0;
+    // Iterate over all nodes in the output to calculate the pattern error and node error
+    while (curNode != NULL) {
+        curNode->err = sigmoidError(curNode->value) * (targetValues[targetCounter] - curNode->value);   // Error at output node i
+        // Calculate the error (Desired - Output)^2
+        err += (targetValues[targetCounter] - curNode->value)*(targetValues[targetCounter] - curNode->value);
+        curNode = curNode->next;
+        targetCounter++;
+    }
+
+    // Calculate the error relative to each err in the layer
+    NodeLayer *back_layer = ahead_layer->prev;
+
+    // Iterate over all nodes in current layer
+    // TODO: Change this to go over multiple hidden layers
+    curNode = back_layer->nodes;
+    while (curNode != NULL) {
+        curNode->err = sigmoidError(curNode->value);
+        Node *iterNode = back_layer->nodes;
+        Weights *curWeight = curNode->weights;
+        double weightedErr = 0.0;
+
+        // Compute weighted error in for each node in the next layer
+        while (iterNode) {
+            weightedErr += iterNode->err * curWeight->weight;
+            iterNode = iterNode->next;
+            curWeight = curWeight->next;
+        }
+
+        curNode->err *= weightedErr;
+        curNode = curNode->next;
+    }
+
+    // Go through each node layer and adjust the weights based on the result in next layer
+    while(back_layer != NULL) {
+        curNode = back_layer->nodes;
+        while (curNode != NULL) {
+            Node *iterNode = ahead_layer->nodes;
+            Weights *curWeight = curNode->weights;
+
+            while(iterNode != NULL) {
+                // Adjust the node weights in the back_layer
+                if (momentum > 0){
+                    curWeight->weight += (learningRate * curNode->value * iterNode->err) + (momentum * (curWeight->delta));
+                    curWeight->delta = (learningRate * curNode->value * iterNode->err);
+                } else {
+                    curWeight->weight += (learningRate * curNode->value * iterNode->err);
+                }
+                iterNode = iterNode->next;
+                curWeight = curWeight->next;
+            }
+            curNode = curNode->next;
+        }
+
+        // Adjust the result layer threshholds
+        Node *iterNode = ahead_layer->nodes;
+        while (iterNode != NULL) {
+            iterNode->threshold += learningRate * iterNode->err;
+            iterNode = iterNode->next;
+        }
+
+        ahead_layer = back_layer;
+        back_layer = back_layer->prev;
+
+    }
+    //
+    // // Adjust the Input -> Hidden layer connections
+    //     // Repeat above with input layer as hidden and hidden as output
+
+    return err;
+}
+
+
 // Testing
 int main (void) {
     srand(time(NULL)); // Seed the random generator
@@ -242,6 +339,8 @@ int main (void) {
     // Create a single hidden layer
     NodeLayer *h_layer = initLayer(2);
     in_nodes->next = h_layer;
+    h_layer->prev = in_nodes;
+
     addWeight(h_layer->nodes->weights);
     addWeight(h_layer->nodes->next->weights);
 
@@ -258,6 +357,7 @@ int main (void) {
 
     NodeLayer *out_nodes = initLayer(2);
     h_layer->next = out_nodes;
+    out_nodes->prev = h_layer;
     // printf("\n\t\tOutput Layer\n");
     // printLayer(out_nodes);
 
@@ -265,8 +365,15 @@ int main (void) {
     sendData(10.0, in_nodes->nodes);
     sendData(30.0, in_nodes->nodes->next);
     sendData(20.0, in_nodes->nodes->next->next);
-    printLayer(in_nodes);
+    // printLayer(in_nodes);
+
     // Begin
     feedNetwork(in_nodes);
+
+    double *target = malloc(sizeof(double)*2);
+    target[0] = 1.0;
+    target[1] = 0.0;
+    backPropagateError(in_nodes, target);
+    printNetwork(in_nodes);
     return 0;
 }

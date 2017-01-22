@@ -26,6 +26,9 @@
 #endif
 
 typedef struct Node {
+    double value;
+    double threshold;
+    double err;
     struct DataIn *data_in;     // Holds all data the node is receiving
     Weights *weights;           // List of weights to next layer
     struct Node *next;          // Pointer to next node in same layer
@@ -34,6 +37,7 @@ typedef struct Node {
 typedef struct NodeLayer {
     Node *nodes;                // Linked list of nodes in this layer
     struct NodeLayer *next;     // Pointer to the next layer
+    struct NodeLayer *prev;     // Pointer to the previous layer
 }NodeLayer;
 
 typedef struct DataIn{
@@ -94,3 +98,7 @@ void getOutput(NodeLayer *network);
 
 // Prints the DataIn structure
 void printDataIn(DataIn *data);
+
+// Computes the error on a training pattern
+// Returns the calculated error on this pattern, summed over all outputs
+double backPropagateError(NodeLayer *in_layer, double *targetValues);

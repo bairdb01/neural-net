@@ -13,7 +13,8 @@
 
 Weights * initWeights() {
     Weights *weights = malloc(sizeof(Weights));
-    weights->weight = 2.0 * rand()/(double)RAND_MAX  - 1.0;
+    weights->weight = rand()/(double)RAND_MAX; // 2.0 * rand()/(double)RAND_MAX  - 1.0;
+    weights->delta = 0.0;
     weights->next = NULL;
     return weights;
 }

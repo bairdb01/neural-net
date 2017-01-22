@@ -21,6 +21,7 @@
 
  typedef struct Weights {
      double weight;
+     double delta;
      struct Weights * next;
  }Weights;
 
