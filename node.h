@@ -5,7 +5,7 @@
  * Description: Header file for nodes.c. Contains relevant functions
  *              data structures.
  */
-#ifndef STDLI_H
+#ifndef STDLIB_H
 #define STDLIB_H
 #include <stdlib.h>
 #endif
@@ -23,6 +23,11 @@
 #ifndef WEIGHTS_H
 #define WEIGHTS_H
 #include "weights.h"
+#endif
+
+#ifndef DATA_H
+#define DATA_H
+#include "data.h"
 #endif
 
 typedef struct Node {
@@ -60,6 +65,9 @@ void printNode(Node *node);
 // Print NodeLayer
 void printLayer(NodeLayer *list);
 
+// Print network
+void printNetork (NodeLayer *network);
+
 // Free Node
 void freeNode(Node* node);
 
@@ -91,7 +99,7 @@ void computeNode(Node *curNode, NodeLayer *nextLayer);
 void feedLayer(NodeLayer *layer);
 
 // Begin feeding the network with data to receive an output
-void feedNetwork();
+void feedNetwork(NodeLayer *network, double *input, int nInputs);
 
 // Outputs the results of the nodes in the last layer
 void getOutput(NodeLayer *network);
@@ -100,5 +108,11 @@ void getOutput(NodeLayer *network);
 void printDataIn(DataIn *data);
 
 // Computes the error on a training pattern
-// Returns the calculated error on this pattern, summed over all outputs
-double backPropagateError(NodeLayer *in_layer, double *targetValues);
+// Returns the calculated error on the previously executed pattern, summed over all outputs
+double backPropagateError(NodeLayer *in_layer, double *targetValues, double learningRate, double momentum);
+
+// Trains a network
+double trainNetwork(DataSet *set, NodeLayer *network, double learningRate, double momentum);
+
+// Creates a network with params being the number of nodes per layer (%d %d %d etc)
+NodeLayer *createNetwork(FILE *netFP);
