@@ -1,4 +1,3 @@
 4 #num_nodes_in_input
-3 #num_nodes_in_hidden_1
-3
+10 #num_nodes_in_hidden_1
 3 #num_nodes_in_output

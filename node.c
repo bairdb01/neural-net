@@ -159,8 +159,8 @@ void computeNode(Node *curNode, NodeLayer *nextLayer){
     // Calculate the value to send (weighted sum input passed through the sigmoid function)
     double value = calcValue(curNode);
     Weights *curWeight = curNode->weights;
-    value = sigmoid(value);
-    // value = sigmoid(curNode->threshold + value);
+//    value = sigmoid(value);
+     value = sigmoid(curNode->threshold + value);
     curNode->value = value;
     Node *nextNode = nextLayer->nodes;
 
@@ -224,8 +224,8 @@ void feedNetwork(NodeLayer *network, double *input, int nInputs){
     // Print the node's calculated value
     while (curNode != NULL) {
         double value = calcValue(curNode);
-        value = sigmoid(value);
-        // value = sigmoid(curNode->threshold + value);
+//        value = sigmoid(value);
+         value = sigmoid(curNode->threshold + value);
         curNode->value = value;
         curNode = curNode->next;
     }
@@ -330,8 +330,8 @@ double backPropagateError(NodeLayer *in_layer, double *targetValues, double lear
 double trainNetwork(DataSet *set, NodeLayer *network, double learningRate, double momentum){
     int epoch = 0;
     double err = 999999;    // Cumulative error over an epoch
-    int maxIter = 500000;
-    double minErr = 0.000001;
+    int maxIter = 100000;
+    double minErr = 0.00001;
 
     printf("Training...");
     fflush(stdout);
@@ -394,10 +394,10 @@ NodeLayer *createNetwork(FILE *netFP) {
     NodeLayer *network = NULL;
     int numNodes = 0;
     int nPrev = -1;
+
     // Read the network file for specifications
     while (fscanf(netFP, "%d %*s", &numNodes) > 0) {
         NodeLayer *toAdd = initLayer(numNodes);
-
         if (network == NULL)
             network = toAdd;
         else {
@@ -412,7 +412,7 @@ NodeLayer *createNetwork(FILE *netFP) {
         if (nPrev > 0) {
             Node *iter = toAdd->prev->nodes;
             while (iter != NULL) {
-                for (int i = 0; i < (nPrev-1); i++) {
+                for (int i = 0; i < (numNodes-1); i++) {
                     Weights *newWeight = initWeights();
                     newWeight->next = iter->weights;
                     iter->weights = newWeight;
@@ -486,7 +486,6 @@ int main (void) {
     char *trainLoc = malloc(sizeof(char)*100);
     // printf("Where is the training file located?\n");
     // scanf("%s", trainLoc);
-
     // FILE *trainFP = fopen(trainLoc, "r");
     FILE *trainFP = fopen("training/iris.txt", "r");
     if (trainFP == NULL) {
@@ -498,11 +497,15 @@ int main (void) {
     printf("Creating network...\n");
     NodeLayer *network = createNetwork(netFP);
 
-
     // Read the datafiles to memory
     printf("Loading training data into memory...\n");
     rewind(netFP);
     DataSet *trainSet = loadData(netFP, trainFP);
+
+    char *testLoc = malloc(sizeof(char)*100);
+    // printf("Where is the test file located?\n");
+    // scanf("%s", testLoc);
+    // FILE *testFP = fopen(testLoc, "r");
     FILE *testFP = fopen("test/iris.txt", "r");
     if (testFP == NULL) {
         printf("Invalid test file location\n");
@@ -514,6 +517,7 @@ int main (void) {
     DataSet *testSet = loadData(netFP, testFP);
 
     // Begin training
+    printNetwork(network);
     trainNetwork(trainSet, network, learningRate, momentum);
 
     // Get the output layer
@@ -533,7 +537,7 @@ int main (void) {
     }
 
     // Need to save network weights, deltas, learningRate, momentum, etc
-
+    free(testLoc);
     free(trainLoc);
     fclose(netFP);
     fclose(trainFP);
