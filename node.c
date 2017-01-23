@@ -10,7 +10,7 @@
  * TODO: Test multiple hidden layers
  * TODO: Save network
  * TODO: In data_in the there is an extra 0 at the end of list, doesn't affect results only memory
- * TODO: what does sigmoid (threshold  + sum do), is same as sigmoid(sum)?
+ * TODO: what does sigmoid (threshold  + sum), is same as sigmoid(sum)? get better results with later
  */
 
 #ifndef NODE_H
@@ -158,9 +158,9 @@ double calcValue(Node *node){
 void computeNode(Node *curNode, NodeLayer *nextLayer){
     // Calculate the value to send (weighted sum input passed through the sigmoid function)
     double value = calcValue(curNode);
-    // printf("%lf\n", value);
     Weights *curWeight = curNode->weights;
     value = sigmoid(value);
+    // value = sigmoid(curNode->threshold + value);
     curNode->value = value;
     Node *nextNode = nextLayer->nodes;
 
@@ -214,8 +214,21 @@ void feedNetwork(NodeLayer *network, double *input, int nInputs){
         curLayer = curLayer->next;
     }
 
-    // Output layer outputs results
-    getOutput(curLayer);
+    // Calculate the output values
+    while(curLayer->next != NULL){
+        curLayer = curLayer->next;
+    }
+
+    Node *curNode = curLayer->nodes;
+
+    // Print the node's calculated value
+    while (curNode != NULL) {
+        double value = calcValue(curNode);
+        value = sigmoid(value);
+        // value = sigmoid(curNode->threshold + value);
+        curNode->value = value;
+        curNode = curNode->next;
+    }
 }
 
 void getOutput(NodeLayer *network){
@@ -229,10 +242,7 @@ void getOutput(NodeLayer *network){
     // Print the node's calculated value
     printf("\n\t\tOutput Values\n");
     while (curNode != NULL) {
-        double value = calcValue(curNode);
-        value = sigmoid(value);
-        curNode->value = value;
-        printf("Output Value:%lf\n", value);
+        printf("Output Value:%lf\n", curNode->value);
         curNode = curNode->next;
     }
 }
@@ -261,7 +271,7 @@ double backPropagateError(NodeLayer *in_layer, double *targetValues, double lear
     NodeLayer *back_layer = ahead_layer->prev;
 
     // Iterate over all nodes in current layer
-    // TODO: Change this to go over multiple hidden layers?
+    // TODO: Change this to go over multiple hidden layers
     curNode = back_layer->nodes;
 
     while (curNode != NULL) {
@@ -281,7 +291,7 @@ double backPropagateError(NodeLayer *in_layer, double *targetValues, double lear
         curNode = curNode->next;
     }
 
-    // Go through each node layer and adjust the weights based on the result in next layer
+    // Go through each node layer and adjust the weights based on the result in the next layer
     while(back_layer != NULL) {
         curNode = back_layer->nodes;
         while (curNode != NULL) {
@@ -320,10 +330,16 @@ double backPropagateError(NodeLayer *in_layer, double *targetValues, double lear
 double trainNetwork(DataSet *set, NodeLayer *network, double learningRate, double momentum){
     int epoch = 0;
     double err = 999999;    // Cumulative error over an epoch
-    int maxIter = 10000;
-    double minErr = 0.00001;
+    int maxIter = 500000;
+    double minErr = 0.000001;
 
+    printf("Training...");
+    fflush(stdout);
     while (epoch < maxIter && err > minErr) {
+        if (epoch % 10000 == 0){
+            printf(".");
+            fflush(stdout);
+        }
         err = 0;
         int dataLeft = set->nData;  // How much of the dataset is left
         int *work = malloc(sizeof(int)*set->nData);
@@ -370,6 +386,7 @@ double trainNetwork(DataSet *set, NodeLayer *network, double learningRate, doubl
         err /= (set->nData * set->nTargets);
         epoch++;
     }
+    printf("\n");
     return err;
 }
 
@@ -478,130 +495,47 @@ int main (void) {
     }
 
     // Create network
+    printf("Creating network...\n");
     NodeLayer *network = createNetwork(netFP);
 
+
     // Read the datafiles to memory
+    printf("Loading training data into memory...\n");
     rewind(netFP);
     DataSet *trainSet = loadData(netFP, trainFP);
-
     FILE *testFP = fopen("test/iris.txt", "r");
     if (testFP == NULL) {
         printf("Invalid test file location\n");
         return 1;
     }
+
     rewind(netFP);
+    printf("Loading test data into memory...\n");
     DataSet *testSet = loadData(netFP, testFP);
 
     // Begin training
     trainNetwork(trainSet, network, learningRate, momentum);
 
+    // Get the output layer
+    NodeLayer *out_layer = network;
+    while (out_layer->next != NULL)
+        out_layer = out_layer->next;
+
     // Test the network
-    printf("\t\t\tTesting\n");
+    printf("\n\t\tTesting\n");
     Data *iter = testSet->data;
     while (iter != NULL) {
         printf("\nInput: %lf %lf %lf %lf\n", iter->inputs[0], iter->inputs[1], iter->inputs[2], iter->inputs[3]);
         printf("Target: %lf %lf %lf\n", iter->targets[0], iter->targets[1], iter->targets[2]);
         feedNetwork(network, iter->inputs, 4);
+        getOutput(out_layer);
         iter = iter->next;
     }
 
-    //Save network weights, deltas, learningRate, momentum, etc
+    // Need to save network weights, deltas, learningRate, momentum, etc
 
     free(trainLoc);
     fclose(netFP);
     fclose(trainFP);
-
-    // // Create 4 input nodes
-    //
-    // NodeLayer *in_nodes = initLayer(4);
-    //
-    // // Add another weight to each node. Total = 3 per node
-    // addWeight(in_nodes->nodes->weights);
-    // addWeight(in_nodes->nodes->weights);
-    // addWeight(in_nodes->nodes->next->weights);
-    // addWeight(in_nodes->nodes->next->weights);
-    // addWeight(in_nodes->nodes->next->next->weights);
-    // addWeight(in_nodes->nodes->next->next->weights);
-    // addWeight(in_nodes->nodes->next->next->next->weights);
-    // addWeight(in_nodes->nodes->next->next->next->weights);
-    //
-    // // Change weights of first node
-    // // changeWeight(in_nodes->nodes->weights, 0, 0.2);
-    // // changeWeight(in_nodes->nodes->weights, 1, 0.7);
-    //
-    // // Change weights of second node
-    // // changeWeight(in_nodes->nodes->next->weights, 0, -0.1);
-    // // changeWeight(in_nodes->nodes->next->weights, 1, -1.2);
-    //
-    // // Change weights of third node
-    // // changeWeight(in_nodes->nodes->next->next->weights, 0, 0.4);
-    // // changeWeight(in_nodes->nodes->next->next->weights, 1, 1.2);
-    // // printf("\n\t\tInput Nodes\n");
-    // // printLayer(in_nodes);
-    //
-    // // Create a single hidden layer
-    // NodeLayer *h_layer = initLayer(3);
-    // in_nodes->next = h_layer;
-    // h_layer->prev = in_nodes;
-    //
-    // addWeight(h_layer->nodes->weights);
-    // addWeight(h_layer->nodes->weights);
-    // addWeight(h_layer->nodes->next->weights);
-    // addWeight(h_layer->nodes->next->weights);
-    // addWeight(h_layer->nodes->next->next->weights);
-    // addWeight(h_layer->nodes->next->next->weights);
-    //
-    // // changeWeight(h_layer->nodes->weights, 0, 1.1);
-    // // changeWeight(h_layer->nodes->weights, 1, 3.1);
-    // // changeWeight(h_layer->nodes->next->weights, 0, 0.1);
-    // // changeWeight(h_layer->nodes->next->weights, 1, 1.17);
-    //
-    //
-    // // printf("\n\t\tHidden Layer\n");
-    // // printLayer(h_layer);
-    //
-    // // Create output nodes
-    // NodeLayer *out_nodes = initLayer(3);
-    // addWeight(out_nodes->nodes->weights);
-    // addWeight(out_nodes->nodes->weights);
-    // addWeight(out_nodes->nodes->next->weights);
-    // addWeight(out_nodes->nodes->next->weights);
-    // addWeight(out_nodes->nodes->next->next->weights);
-    // addWeight(out_nodes->nodes->next->next->weights);
-    // h_layer->next = out_nodes;
-    // out_nodes->prev = h_layer;
-    // // printf("\n\t\tOutput Layer\n");
-    // // printLayer(out_nodes);
-    //
-    // // Input some values to nodes
-    // // sendData(5.9, in_nodes->nodes);
-    // // sendData(3.0, in_nodes->nodes->next);
-    // // sendData(5.1, in_nodes->nodes->next->next);
-    // // sendData(1.8, in_nodes->nodes->next->next->next);
-    // // printLayer(in_nodes);
-    //
-    // // Data *testInput = initData(4, 3, 0);
-    // // testInput->next = initData(4,3,1);
-    // // testInput->next->next = initData(4,3,2);
-    // // testInput->next->next->next = initData(4,3,3);
-    // double *testInputs = malloc(sizeof(double)*4);
-    // testInputs[0] = 5.9;
-    // testInputs[1] = 3.0;
-    // testInputs[2] = 5.1;
-    // testInputs[3] = 1.8;
-    //
-    // // Begin
-    // feedNetwork(in_nodes, testInputs, 4);
-    //
-    // double *target = malloc(sizeof(double)*3);
-    // target[0] = 0.0;
-    // target[1] = 0.0;
-    // target[2] = 1.0;
-    // // double learningRate = 0.3;
-    // // double momentum = 0.6;
-    //
-    // backPropagateError(in_nodes, target, learningRate, momentum);
-    // printNetwork(in_nodes);
-
     return 0;
 }
