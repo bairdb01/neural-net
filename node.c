@@ -27,6 +27,7 @@
 #define STRING_H
 #include <string.h>
 #endif
+
 // Initialize node
 Node * initNode(){
     Node *node = malloc(sizeof(Node));
@@ -247,10 +248,10 @@ double backPropagateError(NodeLayer *in_layer, double *targetValues, double lear
 
     Node *curNode = ahead_layer->nodes;
     int targetCounter = 0;
-    // Iterate over all nodes in the output to calculate the pattern error and node error
+    // Compute error at output layer
     while (curNode != NULL) {
         curNode->err = sigmoidError(curNode->value) * (targetValues[targetCounter] - curNode->value);   // Error at output node i
-        // Calculate the error (Desired - Output)^2
+        // Calculate the total error (Desired - Output)^2
         err += (targetValues[targetCounter] - curNode->value)*(targetValues[targetCounter] - curNode->value);
         curNode = curNode->next;
         targetCounter++;
@@ -273,8 +274,7 @@ double backPropagateError(NodeLayer *in_layer, double *targetValues, double lear
         while (iterNode != NULL) {
             weightedErr += iterNode->err * curWeight->weight;
             iterNode = iterNode->next;
-
-            // curWeight = curWeight->next;
+            curWeight = curWeight->next;
         }
 
         curNode->err *= weightedErr;
