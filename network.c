@@ -194,7 +194,7 @@ double backPropagateError(NodeLayer *in_layer, double *targetValues, double lear
 double trainNetwork(DataSet *set, NodeLayer *network, double learningRate, double momentum){
     int epoch = 0;
     double err = 999999;    // Cumulative error over an epoch
-    int maxIter = 1;
+    int maxIter = 1000000;
     double minErr = 0.00001;
 
     printf("Training...");
