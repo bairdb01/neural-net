@@ -31,9 +31,9 @@
 #endif
 
 typedef struct Node {
-    double value;
-    double threshold;
-    double err;
+    double value;               // Nodes value after sigmoid function
+    double threshold;           // Node Threshold/bias
+    double err;                 // Calculated error of this node
     struct DataIn *data_in;     // Holds all data the node is receiving
     Weights *weights;           // List of weights to next layer
     struct Node *next;          // Pointer to next node in same layer
@@ -56,7 +56,7 @@ DataIn * initDataIn();
 // Initialize node
 Node * initNode();
 
-// Initialize the nodes in reverse order
+// Initialize the nodes
 NodeLayer * initLayer (int numNodes);
 
 // Print a node
@@ -68,38 +68,20 @@ void printLayer(NodeLayer *list);
 // Print network
 void printNetork (NodeLayer *network);
 
+// Free DataIn structure
+void freeDataIn(DataIn *dataIn);
+
 // Free Node
 void freeNode(Node* node);
 
 // Free NodeLayer
-void freeNodeLayer(NodeLayer *list);
-
-// Creates a layer of hidden nodes
-NodeLayer * initHiddenLayer(int numNodes);
+void freeNodeLayers(NodeLayer *list);
 
 // Iterate through all the input data of a node and calculate the weighted sum
 double calcValue(Node *node);
 
-// Sigmoid function
-double sigmoid(double x);
-
-// SigmoidError function
-double sigmoidError(double x);
-
 // Sends a double (weight*value) to the start of receiver's data list
 void sendData(double toSend, Node *receiver);
-
-// Calculates the weighted sum of the inputs of a node
-double calcValue(Node *node);
-
-// A node computes it's output values and sends to the next layer
-void computeNode(Node *curNode, NodeLayer *nextLayer);
-
-// Iterates through all nodes in a layer and sends the results to the next layer
-void feedLayer(NodeLayer *layer);
-
-// Begin feeding the network with data to receive an output
-void feedNetwork(NodeLayer *network, double *input, int nInputs);
 
 // Outputs the results of the nodes in the last layer
 void getOutput(NodeLayer *network);
@@ -107,12 +89,3 @@ void getOutput(NodeLayer *network);
 // Prints the DataIn structure
 void printDataIn(DataIn *data);
 
-// Computes the error on a training pattern
-// Returns the calculated error on the previously executed pattern, summed over all outputs
-double backPropagateError(NodeLayer *in_layer, double *targetValues, double learningRate, double momentum);
-
-// Trains a network
-double trainNetwork(DataSet *set, NodeLayer *network, double learningRate, double momentum);
-
-// Creates a network with params being the number of nodes per layer (%d %d %d etc)
-NodeLayer *createNetwork(FILE *netFP);

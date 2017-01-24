@@ -34,3 +34,7 @@ Data * initData(int nInputs, int nTargets, int id);
 DataSet * initDataSet(int nInputs, int nTargets);
 
 void printDataSet(DataSet *set);
+
+void freeDataChain(Data *data);
+
+void freeDataSet(DataSet *set);

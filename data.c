@@ -29,6 +29,26 @@ DataSet *initDataSet(int nInputs, int nTargets) {
     return set;
 }
 
+void freeDataChain(Data *data) {
+    free(data->inputs);
+    free(data->targets);
+    Data *temp;
+    while (data != NULL) {
+        temp = data;
+        data = data->next;
+        free(temp);
+    }
+}
+
+void freeDataSet(DataSet *set) {
+    DataSet *temp;
+    while (set != NULL) {
+        temp = set;
+        freeDataChain(set->data);
+    }
+    free(set);
+}
+
 void printDataSet(DataSet *set){
     printf("---- DataSet ----\n");
     printf("In:%d Targets:%d\n", set->nIn, set->nTargets);

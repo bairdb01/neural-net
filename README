@@ -1,0 +1,12 @@
+To compile code:
+    make
+
+To run program:
+    ./ann
+    Enter a learning rate: e.g. 0.01
+    Enter a momentum value: e.g 0.6
+    Enter train file path
+    Enter a test file path
+
+To configure number of nodes in the network:
+    Modify the numbers in network.txt
