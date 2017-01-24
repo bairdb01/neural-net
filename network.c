@@ -194,7 +194,7 @@ double backPropagateError(NodeLayer *in_layer, double *targetValues, double lear
 double trainNetwork(DataSet *set, NodeLayer *network, double learningRate, double momentum){
     int epoch = 0;
     double err = 999999;    // Cumulative error over an epoch
-    int maxIter = 100000;
+    int maxIter = 1;
     double minErr = 0.00001;
 
     printf("Training...");
@@ -325,6 +325,7 @@ DataSet * loadData(FILE *netFP, FILE *trainFP) {
         set->data = data;
         set->nData++;
     }
+    free(line);
     return set;
 }
 
@@ -379,10 +380,10 @@ int main (void) {
     rewind(netFP);
     printf("Loading test data into memory...\n");
     DataSet *testSet = loadData(netFP, testFP);
-
+    
     // Begin training
     // printNetwork(network);
-    // trainNetwork(trainSet, network, learningRate, momentum);
+     trainNetwork(trainSet, network, learningRate, momentum);
 
     // Get the output layer
     NodeLayer *out_layer = network;
@@ -407,9 +408,8 @@ int main (void) {
     free(testLoc);
     free(trainLoc);
     free(netStr);
-    // freeDataChain(iter);
-    // freeDataSet(testSet);
-    // freeDataSet(trainSet);
-    // freeNodeLayers(network);
+    freeDataSet(testSet);
+    freeDataSet(trainSet);
+    freeNodeLayers(network);
     return 0;
 }
