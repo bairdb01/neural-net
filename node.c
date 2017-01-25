@@ -6,7 +6,6 @@
  *              (Functions to aid in node tasks)
  * Used the following website as an example for calculations:
  *         http://www.doc.ic.ac.uk/~sgc/teaching/pre2012/v231/lecture13.html
- * TODO: free functions
  * TODO: Test multiple hidden layers
  * TODO: In data_in the there is an extra 0 at the end of list, doesn't affect results only memory
  */

@@ -329,17 +329,24 @@ DataSet * loadData(FILE *netFP, FILE *trainFP) {
     return set;
 }
 
+void saveNetwork(NodeLayer *network, char *netName) {
+    // FILE *fp = fopen(netName, "w");
+
+    // fclose(fp);
+}
+
 int main (void) {
     srand(time(NULL)); // Seed the random generator
     rand();
     double learningRate = 0.0;
     double momentum = 0.0;
     char *netStr = malloc(sizeof(char)*100);
-    netStr = strcpy(netStr, "network.txt");
+    netStr = strcpy(netStr, "network.cfg");
 
-    FILE *netFP = fopen(netStr, "rw");
+    FILE *netFP = fopen(netStr, "r");
     if (netFP == NULL) {
         printf("Could not find network.txt file\n");
+        free(netStr);
         return 1;
     }
 
@@ -349,12 +356,14 @@ int main (void) {
     scanf("%lf", &momentum);
 
     char *trainLoc = malloc(sizeof(char)*100);
-    // printf("Where is the training file located?\n");
-    // scanf("%s", trainLoc);
-    // FILE *trainFP = fopen(trainLoc, "r");
-    FILE *trainFP = fopen("training/iris.txt", "r");
+     printf("Where is the training file located?\n");
+     scanf("%s", trainLoc);
+     FILE *trainFP = fopen(trainLoc, "r");
+   // FILE *trainFP = fopen("train/iris.txt", "r");
     if (trainFP == NULL) {
         printf("Invalid file location\n");
+        fclose(netFP);
+        free(netStr);
         return 1;
     }
 
@@ -368,40 +377,74 @@ int main (void) {
     DataSet *trainSet = loadData(netFP, trainFP);
 
     char *testLoc = malloc(sizeof(char)*100);
-    // printf("Where is the test file located?\n");
-    // scanf("%s", testLoc);
-    // FILE *testFP = fopen(testLoc, "r");
-    FILE *testFP = fopen("test/iris.txt", "r");
+     printf("Where is the test file located?\n");
+     scanf("%s", testLoc);
+     FILE *testFP = fopen(testLoc, "r");
+    // FILE *testFP = fopen("test/iris.txt", "r");
     if (testFP == NULL) {
         printf("Invalid test file location\n");
+        fclose(netFP);
+        fclose(trainFP);
+        free(testLoc);
+        free(trainLoc);
+        free(netStr);
+        freeDataSet(trainSet);
+        freeNodeLayers(network);
         return 1;
     }
 
     rewind(netFP);
     printf("Loading test data into memory...\n");
     DataSet *testSet = loadData(netFP, testFP);
-    
+
     // Begin training
     // printNetwork(network);
      trainNetwork(trainSet, network, learningRate, momentum);
 
     // Get the output layer
-    NodeLayer *out_layer = network;
-    while (out_layer->next != NULL)
-        out_layer = out_layer->next;
+
+    printf("Print test results? (y/n)\n");
+    getchar(); // stray newline
+    char printTest = getchar();
 
     // Test the network
-    printf("\n\t\tTesting\n");
-    Data *iter = testSet->data;
-    while (iter != NULL) {
-        printf("\nInput: %lf %lf %lf %lf\n", iter->inputs[0], iter->inputs[1], iter->inputs[2], iter->inputs[3]);
-        printf("Target: %lf %lf %lf\n", iter->targets[0], iter->targets[1], iter->targets[2]);
-        feedNetwork(network, iter->inputs, 4);
-        getOutput(out_layer);
-        iter = iter->next;
+    if (printTest == 'y' || printTest == 'Y') {
+        NodeLayer *out_layer = network;
+        while (out_layer->next != NULL)
+            out_layer = out_layer->next;
+
+        printf("\n\t\tTesting\n");
+        Data *iter = testSet->data;
+        while (iter != NULL) {
+            printf("\nInput: ");
+            for (int i = 0; i < testSet->nIn; i++)
+                printf("%lf ", iter->inputs[i]);
+            printf("\n");
+
+            printf("Target: ");
+            for (int i = 0; i < testSet->nTargets; i++)
+                printf("%lf ", iter->targets[i]);
+            printf("\n");
+
+            feedNetwork(network, iter->inputs, testSet->nIn);
+            getOutput(out_layer);
+            iter = iter->next;
+        }
     }
 
     // Need to save network weights, deltas, learningRate, momentum, etc
+    // printf("Save network? (y/n)\n");
+    // char save = ' ';
+    // getchar(); // stray newline
+    // save = getchar();
+    // if (save == 'y' || save == 'Y') {
+    //     char *netName = malloc(sizeof(char)*100);
+    //     printf("Enter a filename to save as:\n");
+    //     scanf("%s", netName);
+    //     saveNetwork(network, netName);
+    // }
+
+    printf("Cleaning up...\n");
     fclose(netFP);
     fclose(trainFP);
     fclose(testFP);

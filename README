@@ -10,3 +10,10 @@ To run program:
 
 To configure number of nodes in the network:
     Modify the numbers in network.txt
+
+To Test:
+	Test files are located in the "test" folder.
+	Corresponding training files are located in the "train" folder
+	
+	When testing, make sure to adjust the number of nodes in each layer in
+	the network.cfg file. 
