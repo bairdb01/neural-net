@@ -1,3 +1,5 @@
+A multilayer perceptron for classification.
+
 To compile code:
     make
 
@@ -17,3 +19,6 @@ To Test:
 	
 	When testing, make sure to adjust the number of nodes in each layer in
 	the network.cfg file. 
+	
+Note:
+	Haven't tested multiple hidden layers
